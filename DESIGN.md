@@ -82,6 +82,45 @@ pattern as `tor-client-go`/`i2p-go`, not `ra-common-go`'s wider
 connected, matching `HTTPService#sendOut`'s
 `if(!isConnected() && !connect())`.
 
+## Identity metadata leaks
+
+Required standard for any HTTP client this project relies on for anonymized
+traffic (Tor/I2P), enforced here and checked against every sibling
+`http-client-*` port: no default header, response header, or connection
+behavior may reveal more about the requester than it has to.
+
+- **Fixed 2026-09-26**: this client used to set no explicit default
+  `User-Agent`, leaving `net/http.Transport` free to inject its own
+  `User-Agent: Go-http-client/1.1` on every request with none set
+  (confirmed: no `User-Agent` handling existed in `client.go` outside the
+  caller-supplied-header path). That's a real fingerprinting signal - it
+  identifies the exact language runtime and HTTP stack to every destination
+  and any on-path observer. Now `DefaultUserAgent` (a generic, widely-shared
+  browser value) is sent whenever the caller hasn't supplied one - the same
+  fix already applied to `http-client-java` (OkHttp's own default,
+  confirmed via bytecode), `http-client-cpp`/`http-client-python` (both
+  previously defaulted to the project-identifying literal
+  `"ra-http-client"`, arguably worse), `http-client-rust`/`http-client-ts`,
+  and `1m5-remnant`'s Android `TorClient`. **Not verified by an actual
+  build/test run** - no Go toolchain was available in the environment this
+  fix was made in; the change itself is small and mechanical, but confirm
+  `go build`/`go test` pass before relying on it.
+- **Not yet verified**: this repo's own comment claims `net/http.Transport`
+  resolves `socks5://` proxy URLs "built in since Go 1.10," implying the
+  destination hostname is handed to the SOCKS layer for remote resolution
+  rather than resolved locally first - matching what `http-client-cpp`'s
+  `ConnectThroughSocks5` was directly confirmed to do. That claim hasn't
+  been independently re-verified against Go's actual stdlib source in this
+  pass (unlike the C++ check, which was) - do that before relying on this
+  client to route anything through `TorSocksRelay`. A local resolution would
+  leak the destination outside the proxy entirely, the same bug found and
+  fixed in `bitcoin-client-java`'s bitcoinj DNS-seed lookups
+  (`tor-client-java`, 2026-09-25).
+- **No server/inbound half** (see "Not the Jetty half" above), so the third
+  known leak shape - a server-identifying response header, found and fixed
+  in `http-client-java`'s Jetty listener (`Server: Jetty(<version>)`) -
+  doesn't apply yet. Check for it if P2's local server hosting is ever built.
+
 ## Not here
 
 - The Jetty-equivalent local server / SPA / WebSocket hosting side of

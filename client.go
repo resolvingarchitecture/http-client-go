@@ -24,6 +24,15 @@ import (
 // DefaultRequestTimeout is the default per-request timeout.
 var DefaultRequestTimeout = 60 * time.Second
 
+// DefaultUserAgent is sent whenever a caller's Envelope has no User-Agent header of its own.
+// Without this, net/http.Transport injects its own "Go-http-client/1.1" on any request with
+// none set - identifying the exact language runtime and HTTP stack to every destination and
+// any on-path observer, a real fingerprinting signal. A generic, widely-shared value instead -
+// deliberately not reflecting this library or its version - matches Tor Browser's own practice
+// of giving every user an identical, unremarkable fingerprint. See DESIGN.md "Identity
+// metadata leaks".
+const DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
+
 // Status is HTTPClient's own small status vocabulary - not ra-common-go's
 // wider servicestatus/network status types - matching every other port
 // (tor-client-go, i2p-go).
@@ -209,6 +218,8 @@ func (c *HTTPClient) Send(envelope *messaging.Envelope) bool {
 	}
 	if v, ok := envelope.Header(messaging.HeaderUserAgent).(string); ok && v != "" {
 		req.Header.Set(messaging.HeaderUserAgent, v)
+	} else {
+		req.Header.Set(messaging.HeaderUserAgent, DefaultUserAgent)
 	}
 
 	resp, err := c.client.Do(req)

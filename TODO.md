@@ -18,6 +18,18 @@
 
 ## P1 — request path
 
+- [x] **Identity metadata leak, fixed 2026-09-26**: no default `User-Agent`
+      was set, so `net/http.Transport` injected its own `Go-http-client/1.1`
+      - see DESIGN.md "Identity metadata leaks". Now sends
+      `DefaultUserAgent` (generic) when the caller hasn't supplied one.
+      **Not verified by `go build`/`go test`** - no Go toolchain was
+      available in the environment this fix was made in; verify before
+      relying on it.
+- [ ] **Verify, don't just cite the doc comment**: confirm `net/http`'s
+      `socks5://` proxy support genuinely resolves the destination hostname
+      via the proxy, not local DNS, before this client (or `tor-client-go`
+      reusing it) is trusted to route anything through `TorSocksRelay` - see
+      DESIGN.md "Identity metadata leaks".
 - [ ] Wire `tor-client-go`/`i2p-go` to use this client's `ProxyURL` instead
       of their own minimal HTTP parsing over a raw SOCKS `net.Conn`.
 - [ ] Expose response status code + headers on the envelope (currently only

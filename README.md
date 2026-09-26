@@ -57,6 +57,21 @@ Depends on `ra-common-go` via a `go.mod` `replace` directive pointing at
 `../../common/ra-common-go`, matching every other Go port's
 monorepo-dependency convention.
 
+## Identity metadata leaks
+
+**Fixed 2026-09-26**, the same class of bug found and fixed in
+`http-client-java`/`http-client-cpp`/`http-client-python` and
+`1m5-remnant`'s Android `TorClient`: this client used to set no explicit
+default `User-Agent`, leaving Go's `net/http.Transport` free to inject its
+own `User-Agent: Go-http-client/1.1` on every request with none set. Now
+defaults to a generic, widely-shared browser value instead. **Not verified
+by a build/test run in this environment** - no Go toolchain was available
+to run `go build`/`go test`; the change is small and mechanical
+(`DefaultUserAgent` constant + an `else` branch), but confirm it compiles
+before relying on it. See `DESIGN.md` "Identity metadata leaks" for the
+still-open SOCKS5 DNS-resolution check, which does need real verification,
+not just assumed from `net/http`'s documented `socks5://` support.
+
 ## Status
 
 HTTP and HTTPS GET/POST/PUT/DELETE work, including multipart bodies and the
