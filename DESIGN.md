@@ -89,22 +89,28 @@ traffic (Tor/I2P), enforced here and checked against every sibling
 `http-client-*` port: no default header, response header, or connection
 behavior may reveal more about the requester than it has to.
 
-- **Fixed 2026-09-26**: this client used to set no explicit default
-  `User-Agent`, leaving `net/http.Transport` free to inject its own
-  `User-Agent: Go-http-client/1.1` on every request with none set
-  (confirmed: no `User-Agent` handling existed in `client.go` outside the
-  caller-supplied-header path). That's a real fingerprinting signal - it
-  identifies the exact language runtime and HTTP stack to every destination
-  and any on-path observer. Now `DefaultUserAgent` (a generic, widely-shared
-  browser value) is sent whenever the caller hasn't supplied one - the same
-  fix already applied to `http-client-java` (OkHttp's own default,
-  confirmed via bytecode), `http-client-cpp`/`http-client-python` (both
-  previously defaulted to the project-identifying literal
+- **Code changed 2026-09-26, ⚠ not yet build-verified**: this client used to
+  set no explicit default `User-Agent`, leaving `net/http.Transport` free
+  to inject its own `User-Agent: Go-http-client/1.1` on every request with
+  none set (confirmed: no `User-Agent` handling existed in `client.go`
+  outside the caller-supplied-header path). That's a real fingerprinting
+  signal - it identifies the exact language runtime and HTTP stack to every
+  destination and any on-path observer. Now `DefaultUserAgent` (a generic,
+  widely-shared browser value) is sent whenever the caller hasn't supplied
+  one - the same fix already applied to `http-client-java` (OkHttp's own
+  default, confirmed via bytecode), `http-client-cpp`/`http-client-python`
+  (both previously defaulted to the project-identifying literal
   `"ra-http-client"`, arguably worse), `http-client-rust`/`http-client-ts`,
-  and `1m5-remnant`'s Android `TorClient`. **Not verified by an actual
-  build/test run** - no Go toolchain was available in the environment this
-  fix was made in; the change itself is small and mechanical, but confirm
-  `go build`/`go test` pass before relying on it.
+  and `1m5-remnant`'s Android `TorClient`.
+  **This one is unverified, unlike all of those**: no Go toolchain was
+  available in the environment this change was made in - `go` was not on
+  `PATH`. `go build`, `go vet`, and `go test ./...` have never actually
+  been run against this change. Treat it as "code written," not "fix
+  confirmed," until someone with a working Go toolchain runs the `Build`
+  sequence in `README.md` and it comes back clean. See `TODO.md`'s
+  standalone verification item - it's deliberately not bundled into the
+  same checklist entry as the code change, so it can't be missed or
+  mistaken for already done.
 - **Not yet verified**: this repo's own comment claims `net/http.Transport`
   resolves `socks5://` proxy URLs "built in since Go 1.10," implying the
   destination hostname is handed to the SOCKS layer for remote resolution

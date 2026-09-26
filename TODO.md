@@ -18,13 +18,21 @@
 
 ## P1 — request path
 
-- [x] **Identity metadata leak, fixed 2026-09-26**: no default `User-Agent`
-      was set, so `net/http.Transport` injected its own `Go-http-client/1.1`
-      - see DESIGN.md "Identity metadata leaks". Now sends
-      `DefaultUserAgent` (generic) when the caller hasn't supplied one.
-      **Not verified by `go build`/`go test`** - no Go toolchain was
-      available in the environment this fix was made in; verify before
-      relying on it.
+- [x] **Identity metadata leak, code fixed 2026-09-26**: no default
+      `User-Agent` was set, so `net/http.Transport` injected its own
+      `Go-http-client/1.1` - see DESIGN.md "Identity metadata leaks". Now
+      sends `DefaultUserAgent` (generic) when the caller hasn't supplied one.
+- [ ] **⚠ Verification still required, not done**: the fix above was written
+      and committed in an environment with **no Go toolchain available at
+      all** (`go` was not on `PATH`, confirmed) - `go build`, `go vet`, and
+      `go test ./...` have **never been run** against it. The change is
+      small and syntactically ordinary Go (a new `const` + an `if`/`else`
+      branch on an existing `req.Header.Set` call), so it's low-risk, but
+      "looks right" is not the same as "compiles and passes." Before this
+      client is used anywhere for real: run the full `go build && go vet
+      ./... && go test ./...` sequence from `README.md`'s Build section and
+      confirm it's clean. Do this before checking the item above off as
+      trustworthy, not just present.
 - [ ] **Verify, don't just cite the doc comment**: confirm `net/http`'s
       `socks5://` proxy support genuinely resolves the destination hostname
       via the proxy, not local DNS, before this client (or `tor-client-go`

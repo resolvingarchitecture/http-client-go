@@ -59,18 +59,23 @@ monorepo-dependency convention.
 
 ## Identity metadata leaks
 
-**Fixed 2026-09-26**, the same class of bug found and fixed in
+**Code changed 2026-09-26, ⚠ not yet build-verified** - the same class of
+bug found and fixed (and confirmed working) in
 `http-client-java`/`http-client-cpp`/`http-client-python` and
 `1m5-remnant`'s Android `TorClient`: this client used to set no explicit
 default `User-Agent`, leaving Go's `net/http.Transport` free to inject its
 own `User-Agent: Go-http-client/1.1` on every request with none set. Now
-defaults to a generic, widely-shared browser value instead. **Not verified
-by a build/test run in this environment** - no Go toolchain was available
-to run `go build`/`go test`; the change is small and mechanical
-(`DefaultUserAgent` constant + an `else` branch), but confirm it compiles
-before relying on it. See `DESIGN.md` "Identity metadata leaks" for the
-still-open SOCKS5 DNS-resolution check, which does need real verification,
-not just assumed from `net/http`'s documented `socks5://` support.
+defaults to a generic, widely-shared browser value instead - but **no Go
+toolchain was available in the environment this change was made in**
+(`go` was not on `PATH`), so `go build`/`go vet`/`go test` have never
+actually been run against it. The change is small and syntactically
+ordinary Go, but "should compile" isn't "does compile" - run the full
+`Build` sequence below and confirm it's clean before trusting this fix, and
+before treating the corresponding `TODO.md` item as more than "code
+written." See `DESIGN.md` "Identity metadata leaks" for the same caveat and
+the still-open SOCKS5 DNS-resolution check, which also needs real
+verification, not just assumed from `net/http`'s documented `socks5://`
+support.
 
 ## Status
 
